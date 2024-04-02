@@ -40,6 +40,18 @@ dependencies:
   path_provider: ^2.1.2
   google_nav_bar: ^5.0.6
   smooth_page_indicator: ^1.1.0
+  google_fonts: ^6.2.1
+  #-----
+  circular_countdown_timer: ^0.2.3
+  tflite_flutter: ^0.10.4
+  google_ml_kit: ^0.16.3
+  flutter_slidable: ^3.1.0
+  showcaseview: ^2.0.3
+  camera: ^0.10.5+9
+  dots_indicator: ^3.0.0
+  stop_watch_timer: ^3.1.1
+  scroll_snap_list: ^0.9.1
+  video_player: ^2.8.3
 
 dev_dependencies:
   flutter_test:

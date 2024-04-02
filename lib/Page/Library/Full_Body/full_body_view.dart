@@ -18,13 +18,19 @@ class FullBodyWorkoutListView extends StatelessWidget {
         scrollDirection: Axis.vertical,
         child: Column(
           children: [
-            ...workouts.map((workout) {
-              return WorkoutCardWidget(
-                workout: workout,
-                isEdit: false,
-                custom: false,
-              );
-            }),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: workouts.length,
+              itemBuilder: (BuildContext context, int index) {
+                final workout = workouts[index];
+                return WorkoutCardWidget(
+                  workout: workout,
+                  isEdit: false,
+                  custom: false,
+                );
+              },
+            ),
           ],
         ),
       ),
