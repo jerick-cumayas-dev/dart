@@ -5,22 +5,10 @@ import 'package:fitguide_main/State_Management/Providers/main_page_provider.dart
 import 'package:fitguide_main/Components/Navigation/bottom_navigation.dart';
 import 'package:fitguide_main/Page/Library/library.dart';
 
-class MainView extends ConsumerStatefulWidget {
-  const MainView({super.key});
-
-  @override
-  MainViewState createState() => MainViewState();
-}
-
-class MainViewState extends ConsumerState<MainView>
-    with SingleTickerProviderStateMixin {
+class MainView extends StatelessWidget {
+  MainView({super.key});
   final List<Widget> _pages = [const HomeView(), const LibraryView()];
   final PageController _pageController = PageController(initialPage: 0);
-
-  @override
-  void initState() {
-    super.initState();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,9 +30,7 @@ class MainViewState extends ConsumerState<MainView>
         ),
         body: PageView(
           onPageChanged: (index) {
-            setState(() {
-              ref.read(mainPageStateProvider.notifier).updateMainPage(index);
-            });
+            ref.read(mainPageStateProvider.notifier).updateMainPage(index);
           },
           scrollDirection: Axis.horizontal,
           controller: _pageController,
@@ -53,11 +39,9 @@ class MainViewState extends ConsumerState<MainView>
         bottomNavigationBar: BottomNavigationBarComponent(
           selectedPage: currentPage,
           onTabTapped: (index) {
-            setState(() {
-              ref.read(mainPageStateProvider.notifier).updateMainPage(index);
-              // _pageController.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.linear);
-              _pageController.jumpToPage(index);
-            });
+            ref.read(mainPageStateProvider.notifier).updateMainPage(index);
+            // _pageController.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.linear);
+            _pageController.jumpToPage(index);
           },
         ),
       );

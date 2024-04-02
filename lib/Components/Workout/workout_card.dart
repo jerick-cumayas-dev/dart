@@ -4,7 +4,6 @@ import 'package:fitguide_main/Components/Workout/workout_details.dart';
 import 'package:fitguide_main/Components/Exercise/exercise_details.dart';
 import 'package:fitguide_main/Services/api/api.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:fitguide_main/State_Management/Providers/user_provider.dart';
 import 'package:fitguide_main/Components/Workout/create_update_workout.dart';
 
 class WorkoutCardWidget extends ConsumerWidget {

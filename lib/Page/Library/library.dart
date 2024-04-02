@@ -48,33 +48,33 @@ class _LibraryViewState extends State<LibraryView>
         tabs: const [
           Tab(
             text: 'Full Body Workout',
-            icon: Icon(Icons.accessibility, color: Colors.white),
+            icon: Icon(Icons.accessibility, color: Colors.black),
           ),
           Tab(
             text: 'Custom Body Workout',
-            icon: Icon(Icons.favorite, color: Colors.white),
+            icon: Icon(Icons.favorite, color: Colors.black),
           ),
           Tab(
             text: 'Exercises',
-            icon: Icon(Icons.fitness_center, color: Colors.white),
+            icon: Icon(Icons.fitness_center, color: Colors.black),
           ),
         ],
-        indicatorColor: Colors.white,
-        labelColor: Colors.white,
+        indicatorColor: Colors.black,
+        labelColor: Colors.black,
         unselectedLabelColor: Colors.grey,
       ),
       Expanded(
         child: Consumer(
           builder: (context, ref, child) {
             final workouts = ref.watch(workoutStateProvider);
-            final user_workouts = ref.watch(userWorkoutStateProvider);
+            final userWorkouts = ref.watch(userWorkoutStateProvider);
             final exercises = ref.watch(exerciseStateProvider);
 
             return TabBarView(
               controller: _tabController,
               children: [
                 FullBodyWorkoutListView(workouts: workouts),
-                WorkoutListView(workouts: user_workouts),
+                WorkoutListView(workouts: userWorkouts),
                 ExercisesView(exercises: exercises),
               ],
             );

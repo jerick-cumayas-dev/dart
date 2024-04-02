@@ -66,7 +66,7 @@ class AuthService {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => const MainView(),
+          builder: (context) => MainView(),
         ),
       );
       ScaffoldMessenger.of(context).showSnackBar(
