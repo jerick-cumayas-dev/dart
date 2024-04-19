@@ -12,11 +12,38 @@ class WorkoutListView extends StatefulWidget {
   });
 
   @override
-  State<WorkoutListView> createState() => _WorkoutListView();
+  WorkoutListViewState createState() => WorkoutListViewState();
 }
 
-class _WorkoutListView extends State<WorkoutListView> {
+class WorkoutListViewState extends State<WorkoutListView> {
+  final TextEditingController searchController = TextEditingController();
+  List<Workout> foundWorkouts = [];
+  bool isSearchEmpty = true;
   bool isEdit = false;
+
+  @override
+  void initState() {
+    super.initState();
+    foundWorkouts = widget.workouts;
+  }
+
+  void filterWorkouts(String query) {
+    setState(() {
+      foundWorkouts = widget.workouts.where((workout) {
+        return workout.name.toLowerCase().contains(query.toLowerCase());
+      }).toList();
+      isSearchEmpty = query.isEmpty; // Update the search status
+    });
+  }
+
+  void clearSearch() {
+    setState(() {
+      searchController.clear();
+      foundWorkouts = widget.workouts;
+      isSearchEmpty = true;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -27,6 +54,19 @@ class _WorkoutListView extends State<WorkoutListView> {
           scrollDirection: Axis.vertical,
           child: Column(
             children: [
+              TextField(
+                controller: searchController,
+                onChanged: filterWorkouts,
+                decoration: InputDecoration(
+                    labelText: 'Search Workouts',
+                    suffixIcon: isSearchEmpty
+                        ? const Icon(Icons.search)
+                        : GestureDetector(
+                            onTap: clearSearch,
+                            child: const Icon(Icons.clear),
+                          )),
+              ),
+              const SizedBox(height: 10.0),
               ElevatedButton(
                 onPressed: () {
                   setState(() {
@@ -37,30 +77,36 @@ class _WorkoutListView extends State<WorkoutListView> {
                   foregroundColor: Colors.purple,
                   backgroundColor: Colors.white,
                 ),
-                child: Container(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.edit,
-                        size: MediaQuery.of(context).size.width * 0.06,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.edit,
+                      size: MediaQuery.of(context).size.width * 0.06,
+                    ),
+                    SizedBox(width: MediaQuery.of(context).size.width * 0.006),
+                    Text(
+                      "Edit Workout",
+                      style: TextStyle(
+                        fontSize: MediaQuery.of(context).size.width * 0.04,
                       ),
-                      SizedBox(
-                          width: MediaQuery.of(context).size.width * 0.006),
-                      Text(
-                        "Edit Workout",
-                        style: TextStyle(
-                          fontSize: MediaQuery.of(context).size.width * 0.04,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-              ...widget.workouts.map((workout) {
-                return WorkoutCardWidget(
-                    workout: workout, isEdit: isEdit, custom: false);
-              }),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: foundWorkouts.length,
+                itemBuilder: (BuildContext context, int index) {
+                  final workout = foundWorkouts[index];
+                  return WorkoutCardWidget(
+                    workout: workout,
+                    isEdit: isEdit,
+                    custom: false,
+                  );
+                },
+              ),
             ],
           ),
         ),

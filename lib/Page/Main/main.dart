@@ -4,10 +4,11 @@ import 'package:fitguide_main/Page/Home/home.dart';
 import 'package:fitguide_main/State_Management/Providers/main_page_provider.dart';
 import 'package:fitguide_main/Components/Navigation/bottom_navigation.dart';
 import 'package:fitguide_main/Page/Library/library.dart';
+import 'package:fitguide_main/Page/Statistics/statistics.dart';
 
 class MainView extends StatelessWidget {
   MainView({super.key});
-  final List<Widget> _pages = [const HomeView(), const LibraryView()];
+  final List<Widget> _pages = [const HomeView(), const LibraryView(), const StatisticsPage()];
   final PageController _pageController = PageController(initialPage: 0);
 
   @override

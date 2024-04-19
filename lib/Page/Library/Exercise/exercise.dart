@@ -1,11 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:fitguide_main/Models/exercise.dart';
-import 'package:fitguide_main/Services/api/api.dart';
+import 'package:fitguide_main/Components/Exercise/exercise_details.dart';
+import 'package:fitguide_main/Components/Exercise/exercise_card.dart';
 
-class ExercisesView extends StatelessWidget {
+class ExercisesPage extends StatefulWidget {
   final List<Exercise> exercises;
 
-  const ExercisesView({super.key, required this.exercises});
+  const ExercisesPage({
+    super.key,
+    required this.exercises,
+  });
+
+  @override
+  ExercisesPageState createState() => ExercisesPageState();
+}
+
+class ExercisesPageState extends State<ExercisesPage> {
+  final TextEditingController searchController = TextEditingController();
+  List<Exercise> foundExercises = [];
+  bool isSearchEmpty = true;
+
+  @override
+  void initState() {
+    super.initState();
+    foundExercises = widget.exercises;
+  }
+
+  void filterExercises(String query) {
+    setState(() {
+      foundExercises = widget.exercises.where((exercise) {
+        return exercise.name.toLowerCase().contains(query.toLowerCase());
+      }).toList();
+      isSearchEmpty = query.isEmpty;
+    });
+  }
+
+  void clearSearch() {
+    setState(() {
+      searchController.clear();
+      foundExercises = widget.exercises;
+      isSearchEmpty = true;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,6 +51,22 @@ class ExercisesView extends StatelessWidget {
         padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.03),
         child: Column(
           children: [
+            TextField(
+              controller: searchController,
+              onChanged: filterExercises,
+              decoration: InputDecoration(
+                labelText: "Search Exercises",
+                suffixIcon: isSearchEmpty
+                    ? const Icon(Icons.search)
+                    : GestureDetector(
+                        onTap: clearSearch,
+                        child: const Icon(Icons.clear),
+                      ),
+              ),
+            ),
+            const SizedBox(
+              height: 10.0,
+            ),
             ElevatedButton(
               onPressed: () {
                 // Navigator.push(
@@ -49,86 +101,20 @@ class ExercisesView extends StatelessWidget {
             Expanded(
               child: ListView.builder(
                 shrinkWrap: true,
-                itemCount: exercises.length,
+                itemCount: foundExercises.length,
                 itemBuilder: (context, index) {
-                  final exercise = exercises[index];
-                  return Card(
-                    color: Colors.white,
-                    elevation: 8.0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16.0),
-                    ),
-                    child: SizedBox(
-                      width: MediaQuery.of(context).size.width,
-                      height: MediaQuery.of(context).size.width * 0.25,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ClipRRect(
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(16.0),
-                              bottomLeft: Radius.circular(16.0),
-                            ),
-                            child: SizedBox(
-                              height: double.infinity,
-                              width: 100,
-                              child: Image.network(
-                                '${API.baseUrl}/${exercise.image}',
-                                fit: BoxFit.cover,
-                              ),
-                            ),
+                  final exercise = foundExercises[index];
+                  return ExerciseCard(
+                    exercise: exercise,
+                    onTap: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ExerciseDetailsPage(exercise: exercise),
                           ),
-                          Expanded(
-                            child: Container(
-                              padding: EdgeInsets.only(
-                                left: MediaQuery.of(context).size.width * 0.030,
-                                top: MediaQuery.of(context).size.width * 0.020,
-                                bottom:
-                                    MediaQuery.of(context).size.width * 0.025,
-                                right:
-                                    MediaQuery.of(context).size.width * 0.020,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    exercise.name,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  SizedBox(
-                                      height:
-                                          MediaQuery.of(context).size.height *
-                                              0.000020),
-                                  Text(
-                                    exercise.description,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                  SizedBox(
-                                      height:
-                                          MediaQuery.of(context).size.height *
-                                              0.000020),
-                                  Text(
-                                    'Difficulty: ${exercise.difficulty}',
-                                    style: const TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                        );
+                    },
                   );
                 },
               ),

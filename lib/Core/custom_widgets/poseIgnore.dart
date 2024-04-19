@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fitguide_main/Core/extraWidgets/customWidgetPDV.dart';
+import 'package:fitguide_main/Core/custom_widgets/customWidgetPDV.dart';
 import 'package:fitguide_main/Core/modes/globalStuff/provider/globalVariables.dart';
+
+import '../../services/provider_collection.dart';
+import 'customButton.dart';
 
 class customDialogEA extends ConsumerStatefulWidget {
   final List<bool> igrnoreCoordinatesList;

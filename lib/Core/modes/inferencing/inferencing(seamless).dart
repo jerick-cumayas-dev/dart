@@ -8,6 +8,8 @@ import 'package:flutter/foundation.dart';
 // Note: heavy imports...may cause lots of load times in between running
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fitguide_main/Core/custom_widgets/videoPreview.dart';
+import 'package:fitguide_main/Services/provider_collection.dart';
 import 'package:fitguide_main/Core/modes/globalStuff/provider/globalVariables.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
 import 'package:tflite_flutter/tflite_flutter.dart' as tfl;
@@ -19,9 +21,10 @@ import 'package:circular_countdown_timer/circular_countdown_timer.dart';
 import '../../misc/painters/pose_painter.dart';
 import 'package:fitguide_main/Core/misc/poseWidgets/detector_view.dart';
 import '../../logicFunction/isolateProcessPDV.dart';
-import '../../extraWidgets/customWidgetPDV.dart';
+// import '../../extraWidgets/customWidgetPDV.dart';
 import '../../mainUISettings.dart';
-import '../../logicFunction/processLogic.dart';
+import 'inferencingP1.dart';
+// import '../../logicFunction/processLogic.dart';
 
 class inferencingSeamless extends ConsumerStatefulWidget {
   final List<Map<String, dynamic>> exerciseList;
@@ -39,19 +42,13 @@ class inferencingSeamless extends ConsumerStatefulWidget {
 class _inferencingSeamlessState extends ConsumerState<inferencingSeamless> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  late String nameOfExercise;
-  late String model;
-  late String video;
-  late List<String> ignoredCoordinates;
-  late int numberOfExecution;
-  late int setsNeeded;
-  late int restDuration;
-
-  // String model = 'assets/models/wholeModel/converted_model_whole_model3637(loss_0.148)(acc_0.947).tflite';
-  // int numberOfExecution = 5;
-  // String nameOfExercise = "testsgdgf";
-  // int setsNeeded = 3;
-  // int restDuration=30;
+  String nameOfExercise = "";
+  String model = "";
+  String video = "";
+  List<String> ignoredCoordinates = [];
+  int numberOfExecution = 0;
+  int setsNeeded = 0;
+  int restDuration = 0;
 
   // ---------------------inferencing mode variables----------------------------------------------------------
   // isolate initialization for heavy process
@@ -60,7 +57,7 @@ class _inferencingSeamlessState extends ConsumerState<inferencingSeamless> {
   RootIsolateToken rootIsolateTokenInferencing = RootIsolateToken.instance!;
 
 // THIS IS TEMPORARY FOR DEBUGGING ONLY! CHANGE THIS TO ACTUAL INPUT REQUIRED
-  int tensorInputNeeded = 5;
+  int tensorInputNeeded = 9;
 
   List<double> prevCoordinates = [];
   List<double> currentCoordinates = [];
@@ -83,7 +80,10 @@ class _inferencingSeamlessState extends ConsumerState<inferencingSeamless> {
   List<Map<String, dynamic>> queueInferencingData = [];
   int noMovementCtr = 0;
 
-  List<Map<String, dynamic>> itemsContainer = [];
+  // int showPreviewCtr = 0;
+  bool showPreviewPass = false;
+
+  // List<Map<String, dynamic>> itemsContainer = [];
 
   // ---------------------countdown variables----------------------------------------------------------
   late int _seconds;
@@ -104,10 +104,16 @@ class _inferencingSeamlessState extends ConsumerState<inferencingSeamless> {
   int buffer = 0;
   int bufferCtr = 0;
 
+  List<bool> inferenceBuffer = [];
+
+  late int inferencingBuffer;
   // ---------------------inferencing data mode variables----------------------------------------------------------
   int inferenceCorrectCtr = 0;
   int setsAchieved = 0;
   int exerciseListCtr = 0;
+
+  late int maxExerciseList;
+  late List<Map<String, dynamic>> tempExerciseList;
 
   // ---------------------countdown variables----------------------------------------------------------
   final CountDownController _controller = CountDownController();
@@ -154,7 +160,8 @@ class _inferencingSeamlessState extends ConsumerState<inferencingSeamless> {
   }
 
   Future<void> _processImage(InputImage inputImage) async {
-    // createFile();
+    ref.watch(showPreviewProvider.notifier).state = false;
+    ref.watch(showPreviewCtrProvider.notifier).state = 0;
 
     if (!_canProcess) return;
     if (_isBusy) return;
@@ -169,6 +176,7 @@ class _inferencingSeamlessState extends ConsumerState<inferencingSeamless> {
 // [ISOLATE FUNCTION] PROCESSING IMAGE ==========================================================================================================================
     try {
       poses = await _poseDetector.processImage(inputImage);
+
       Map<String, dynamic> dataNormalizationIsolate = {
         'inputImage': poses.first.landmarks.values,
         'token': rootIsolateTokenNormalization,
@@ -232,6 +240,20 @@ class _inferencingSeamlessState extends ConsumerState<inferencingSeamless> {
 
 // =====================================================================================================================================================
 
+    try {
+      if (restState == true && restingInitialized == false) {
+        restingInitialized = true;
+        _controller.restart(duration: 10);
+        print("initializingRest ----? $restingInitialized");
+
+        nowPerforming = false;
+      }
+    } catch (error) {
+      print("ERROR AT NEW IMPLEMENTATION ---> $error");
+      CountDownController _controller = CountDownController();
+      _controller.restart(duration: 10);
+    }
+
 // [ISOLATE FUNCTION] MOVEMENT CHECK ==========================================================================================================================
     if (queueMovementData.isNotEmpty) {
       // false = movement
@@ -240,17 +262,8 @@ class _inferencingSeamlessState extends ConsumerState<inferencingSeamless> {
           .then((value) async {
         queueMovementData.removeAt(0);
 
-        try {
 // if rest state is true but it has not started yet then initialize or start it--------------------------------------------------------------------------
-          if (restState == true && restingInitialized == false) {
-            restingInitialized = true;
-            _controller.restart(duration: 10);
-            nowPerforming = false;
-          }
-        } catch (error) {
-          print("ERROR AT NEW IMPLEMENTATION ---> $error");
-        }
-
+        // nowPerforming = true;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxXXXXXXXXXXXXXXXXXXXXXXXXXXX
         if (value == true) {
 // this is checking for at the start of the exercise if movement is detected or not
 // if detected then it will start countdown otherwise it will restart
@@ -265,6 +278,7 @@ class _inferencingSeamlessState extends ConsumerState<inferencingSeamless> {
           if (_controller.getTime().toString() == "10" &&
               nowPerforming == false &&
               restState == true) {
+            print("ENTERING REST STATE");
             nowPerforming = true;
             restState = false;
             restingInitialized = false;
@@ -275,6 +289,7 @@ class _inferencingSeamlessState extends ConsumerState<inferencingSeamless> {
               restState == false) {
             nowPerforming = true;
           }
+
 //for recording metrics
           setState(() {
             try {
@@ -305,9 +320,18 @@ class _inferencingSeamlessState extends ConsumerState<inferencingSeamless> {
       nowPerforming = false;
       inferenceCorrectCtr = 0;
       restState = true;
+
+// if all the sets have been performed
       if (setsAchieved == setsNeeded) {
-        exerciseListCtr++;
-        setsAchieved = 0;
+        ref.watch(showPreviewProvider.notifier).state = true;
+        setState(() {
+          if (exerciseListCtr <= maxExerciseList) {
+            exerciseListCtr++;
+            ref.read(inputNumProvider.notifier).state =
+                widget.exerciseList[exerciseListCtr]['inputNum'];
+          }
+          setsAchieved = 0;
+        });
       }
     }
 
@@ -348,20 +372,47 @@ class _inferencingSeamlessState extends ConsumerState<inferencingSeamless> {
       inferencingList.add(translatedCoordinates);
       translatedCoordinates = [];
     }
-    print("queueInferencingDatalenBefore --> ${queueInferencingData.length}");
 
 // [ISOLATE FUNCTION] INFERENCING ==========================================================================================================================
     if (queueInferencingData.isNotEmpty && nowPerforming == true) {
-      inferencingCoordinatesData(queueInferencingData.elementAt(0), model)
+      inferencingCoordinatesData(queueInferencingData.elementAt(0), model,
+              widget.exerciseList[exerciseListCtr]['inputNum'])
           .then((value) {
+        if (inferenceBuffer.length == 2) {
+          inferenceBuffer.removeAt(0);
+          inferenceBuffer.add(value);
+        } else {
+          inferenceBuffer.add(value);
+        }
+
         if (value == true) {
-          queueInferencingData = [];
-          print(
-              "queueInferencingDatalenAfter --> ${queueInferencingData.length}");
-          inferenceCorrectCtr++;
+          if (ref.watch(showPreviewProvider) == false) {
+            if (inferenceBuffer.elementAt(0) == false &&
+                inferenceBuffer.elementAt(1) == true &&
+                nowPerforming == true) {
+              inferenceCorrectCtr++;
+              ref.watch(showPreviewCtrProvider.notifier).state = 0;
+            }
+          }
+          if (ref.watch(showPreviewProvider) == true) {
+            setState(() {
+              ref.watch(showPreviewProvider.notifier).state = false;
+              showPreviewPass = true;
+            });
+            ref.watch(showPreviewCtrProvider.notifier).state = 0;
+          }
           dynamicCountDownColor = Color.fromARGB(255, 3, 104, 8);
         } else {
           dynamicCountDownColor = Color.fromARGB(255, 255, 0, 0);
+          if (ref.watch(showPreviewProvider) == false) {
+            ref.watch(showPreviewCtrProvider.notifier).state++;
+          }
+
+          if (ref.watch(showPreviewCtrProvider) >= 50) {
+            setState(() {
+              ref.watch(showPreviewProvider.notifier).state = true;
+            });
+          }
         }
         if (queueInferencingData.isNotEmpty) {
           queueInferencingData.removeAt(0);
@@ -416,7 +467,7 @@ class _inferencingSeamlessState extends ConsumerState<inferencingSeamless> {
     return Icon(
       Icons.accessibility_new_sharp,
       color: secondaryColor.withOpacity(opacity),
-      size: screenWidth * 0.08,
+      size: screenWidth * 0.07,
     );
   }
 
@@ -426,7 +477,7 @@ class _inferencingSeamlessState extends ConsumerState<inferencingSeamless> {
     return Icon(
       Icons.lightbulb_circle,
       color: secondaryColor.withOpacity(opacity),
-      size: screenWidth * 0.08,
+      size: screenWidth * 0.07,
     );
   }
 
@@ -530,11 +581,14 @@ class _inferencingSeamlessState extends ConsumerState<inferencingSeamless> {
           onComplete: () {},
           onChange: (String timeStamp) {},
           timeFormatterFunction: (defaultFormatterFunction, duration) {
-            if (nowPerforming == true) {
-              return dynamicCountDownText;
-            } else {
-              return Function.apply(defaultFormatterFunction, [duration]);
-            }
+            print("duration --> $duration");
+            return Function.apply(defaultFormatterFunction, [duration]);
+
+            // if (nowPerforming == true) {
+            //   return dynamicCountDownText;
+            // } else {
+            //   return Function.apply(defaultFormatterFunction, [duration]);
+            // }
           },
         )
         // countdownTimer(context, dynamicCountDownText,
@@ -554,16 +608,44 @@ class _inferencingSeamlessState extends ConsumerState<inferencingSeamless> {
     Widget displayError2;
 
     // exercise details------------------------------------------------------------
+    maxExerciseList = widget.exerciseList.length;
     buffer = ref.watch(bufferProvider);
-    nameOfExercise = widget.exerciseList[exerciseListCtr]['nameOfExercise'];
-    model = widget.exerciseList[exerciseListCtr]['modelPath'];
-    video = widget.exerciseList[exerciseListCtr]['videoPath'];
-    ignoredCoordinates =
-        widget.exerciseList[exerciseListCtr]['ignoredCoordinates'];
-    restDuration = widget.exerciseList[exerciseListCtr]['restDuration'];
-    setsNeeded = widget.exerciseList[exerciseListCtr]['setsNeeded'];
-    numberOfExecution =
-        widget.exerciseList[exerciseListCtr]['numberOfExecution'];
+
+    try {
+      if (exerciseListCtr <= maxExerciseList) {
+        // ref.read(inputNumProvider.notifier).state =
+        //     widget.exerciseList[exerciseListCtr]['inputNum'];
+        nameOfExercise = widget.exerciseList[exerciseListCtr]['nameOfExercise'];
+        model = widget.exerciseList[exerciseListCtr]['modelPath'];
+        video = widget.exerciseList[exerciseListCtr]['videoPath'];
+        ignoredCoordinates =
+            widget.exerciseList[exerciseListCtr]['ignoredCoordinates'];
+        restDuration = widget.exerciseList[exerciseListCtr]['restDuration'];
+        setsNeeded = widget.exerciseList[exerciseListCtr]['setsNeeded'];
+        numberOfExecution =
+            widget.exerciseList[exerciseListCtr]['numberOfExecution'];
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => inferencingP1(
+              exerciseProgram: widget.exerciseList,
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => inferencingP1(
+            exerciseProgram: widget.exerciseList,
+          ),
+        ),
+      );
+    }
+
+    inferencingBuffer = (tensorInputNeeded * 0.5).toInt();
 
     final luminanceValue = ref.watch(luminanceProvider);
 
@@ -599,7 +681,6 @@ class _inferencingSeamlessState extends ConsumerState<inferencingSeamless> {
 
           Align(
             alignment: Alignment.topCenter,
-            // Set top to 0 to cover the entire screen from the top
             child: Container(
               width: screenWidth, // Set a specific width
               height: screenHeight, // Set a specific height or use constraints
@@ -616,54 +697,105 @@ class _inferencingSeamlessState extends ConsumerState<inferencingSeamless> {
           ),
 
 // -----------------------------------------------------------------------------------------------------------[Current Exercise Description]
-          Align(
-            alignment: Alignment.bottomCenter,
+
+          displayCountdownTimer,
+
+          // Positioned(
+          //   bottom: screenHeight * .025,
+          //   left: screenWidth * .07,
+          //   child:
+          // ),
+          Positioned(
+            bottom: screenHeight * 0.15,
             child: Container(
-              height: screenHeight * 0.11,
-              width: screenHeight,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(screenHeight * .02),
-                  topRight: Radius.circular(screenHeight * .02),
-                ),
-                color: mainColor,
-              ),
-              child: Row(
+              width: screenWidth,
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
+                // crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Column(
-                    // mainAxisAlignment: MainAxisAlignment.start,
+                  buildContainerList(
+                      widget.exerciseList.length, exerciseListCtr, context,
+                      spaceModifier: 0.8),
+                ],
+              ),
+            ),
+          ),
+
+          Align(
+            alignment: Alignment(0, .98),
+            child: Container(
+              width: screenWidth * 0.95,
+              height: screenHeight * 0.13,
+              decoration: BoxDecoration(
+                color: secondaryColor,
+                borderRadius: BorderRadius.circular(screenWidth * 0.05),
+              ),
+              child: Stack(children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                  child: LinearProgressIndicator(
+                    minHeight: screenHeight * 0.5,
+                    value: inferenceCorrectCtr / numberOfExecution,
+                    backgroundColor: mainColor.withOpacity(0.9),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                        secondaryColor.withOpacity(0.5)),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.all(10.0), // Adjust the padding as needed
+                  child: Column(
                     children: [
-                      SizedBox(
-                        height: screenHeight * 0.0115,
-                      ),
-                      buildContainerList(
-                          widget.exerciseList.length, exerciseListCtr, context,
-                          spaceModifier: 0.8),
-                      SizedBox(
-                        height: screenHeight * 0.0001,
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                      Row(
                         children: [
-                          SizedBox(
-                            height: screenHeight * 0.0001,
-                          ),
                           Text(
                             "${nameOfExercise}",
+                            textAlign: TextAlign.start,
+                            style: TextStyle(
+                              fontSize: 28.0 * textSizeModif,
+                              fontWeight: FontWeight.w800,
+                              color: tertiaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Text(
+                            "Reps:",
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 25.0 * textSizeModif,
-                              fontWeight: FontWeight.w400,
-                              color: secondaryColor,
+                              fontSize: 19.0 * textSizeModif,
+                              fontWeight: FontWeight.w300,
+                              color: tertiaryColor,
                             ),
                           ),
                           Text(
+                            "  ${inferenceCorrectCtr} / ${numberOfExecution}",
                             textAlign: TextAlign.center,
-                            "${numberOfExecution} executions with ${setsNeeded} sets.",
                             style: TextStyle(
-                              fontSize: 18.0 * textSizeModif,
-                              fontWeight: FontWeight.w200,
+                              fontSize: 19.0 * textSizeModif,
+                              fontWeight: FontWeight.w300,
+                              color: tertiaryColor,
+                            ),
+                          ),
+                          SizedBox(
+                            width: screenWidth * 0.1,
+                          ),
+                          Text(
+                            "Sets:",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 19.0 * textSizeModif,
+                              fontWeight: FontWeight.w300,
+                              color: tertiaryColor,
+                            ),
+                          ),
+                          Text(
+                            "  ${setsAchieved} / ${setsNeeded}",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 19.0 * textSizeModif,
+                              fontWeight: FontWeight.w300,
                               color: tertiaryColor,
                             ),
                           ),
@@ -671,20 +803,13 @@ class _inferencingSeamlessState extends ConsumerState<inferencingSeamless> {
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ]),
             ),
           ),
 
-          displayCountdownTimer,
-          // Positioned(
-          //   bottom: screenHeight * .025,
-          //   left: screenWidth * .07,
-          //   child:
-          // ),
-
           Align(
-            alignment: Alignment(-1.0, 0.78),
+            alignment: Alignment(-1.0, 0.7),
             child: IconButton(
               icon: Icon(
                 Icons.arrow_back,
@@ -696,7 +821,7 @@ class _inferencingSeamlessState extends ConsumerState<inferencingSeamless> {
             ),
           ),
           Align(
-            alignment: Alignment(1.0, 0.78),
+            alignment: Alignment(1.0, 0.7),
             child: IconButton(
               icon: Icon(
                 Icons.question_mark,
@@ -710,168 +835,78 @@ class _inferencingSeamlessState extends ConsumerState<inferencingSeamless> {
 
 // -----------------------------------------------------------------------------------------------------------[Error Indicator Pose]
           Positioned(
-            top: screenWidth * 0.16,
+            top: screenWidth * 0.1,
             child: Container(
               width: screenWidth,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   displayError2,
-                  SizedBox(
-                    height: screenHeight * 0.05,
-                  ),
                   displayError1,
                 ],
               ),
             ),
           ),
 
-          // Align(
-          //   alignment: Alignment.topCenter,
-          //   child: Row(
-          //     mainAxisAlignment: MainAxisAlignment.center,
-          //     children: [
-          //       Align(
-          //         alignment: FractionalOffset(0.5, 0.075),
-          //         child: Container(
-          //           height: screenHeight * 0.03,
-          //           width: screenWidth * 0.38,
-          //           decoration: BoxDecoration(
-          //             borderRadius: BorderRadius.only(
-          //               topLeft: Radius.circular(100.0),
-          //               bottomLeft: Radius.circular(100.0),
-          //               topRight: Radius.circular(100.0),
-          //               bottomRight: Radius.circular(100.0),
-          //             ),
-          //             color: tertiaryColor
-          //                 .withOpacity(0.6), // Adjust alpha as needed
-          //           ),
-          //           child: Row(
-          //             mainAxisAlignment: MainAxisAlignment.center,
-          //             children: [
-          //               Text(
-          //                 textAlign: TextAlign.end,
-          //                 "${setsAchieved.toString()} sets of ${widget.setsNeeded}",
-          //                 style: TextStyle(
-          //                   fontSize: 20.0 * textSizeModif,
-          //                   fontWeight: FontWeight.w200,
-          //                   color: secondaryColor,
-          //                 ),
-          //               ),
-          //             ],
-          //           ),
-          //         ),
-          //       ),
-          //     ],
-          //   ),
-          // ),
 // -----------------------------------------------------------------------------------------------------------[Progress Container]
 
-// FIX THIS!!!!: why not have the progress bars as child to this?!?!?!? wtf fking stupid MF
-          Align(
-            alignment: Alignment(0.0, -0.94),
-            child: Container(
-              width: screenWidth * 0.83,
-              height: screenHeight * 0.05,
-              decoration: BoxDecoration(
-                color: mainColor.withOpacity(0.75),
-                borderRadius: BorderRadius.circular(screenWidth * 0.03),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: screenWidth * 0.80,
-                    height: screenHeight * 0.017,
-                    decoration: BoxDecoration(
-                      color: tertiaryColor,
-                      borderRadius: BorderRadius.circular(screenWidth * 0.07),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(screenWidth * 0.07),
-                      child: LinearProgressIndicator(
-                        value: inferenceCorrectCtr / numberOfExecution,
-                        backgroundColor: tertiaryColor.withOpacity(0.5),
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                            secondaryColor.withOpacity(0.5)),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: screenHeight * 0.005,
-                  ),
-                  buildContainerList(setsNeeded, setsAchieved, context,
-                      spaceModifier: .8),
-                ],
-              ),
-            ),
-          ),
-
-// -----------------------------------------------------------------------------------------------------------[Execution Progress Bar]
           // Align(
-          //   alignment: Alignment(0.0, -0.92),
+          //   alignment: Alignment(0.0, -0.94),
           //   child: Container(
-          //     width: screenWidth * 0.80,
-          //     height: screenHeight * 0.017,
+          //     width: screenWidth * 0.83,
+          //     height: screenHeight * 0.05,
           //     decoration: BoxDecoration(
-          //       color: tertiaryColor,
-          //       borderRadius: BorderRadius.circular(screenWidth * 0.07),
+          //       color: mainColor.withOpacity(0.75),
+          //       borderRadius: BorderRadius.circular(screenWidth * 0.03),
           //     ),
-          //     child: ClipRRect(
-          //       borderRadius: BorderRadius.circular(screenWidth * 0.07),
-          //       child: LinearProgressIndicator(
-          //         value: inferenceCorrectCtr / widget.numberOfExecution,
-          //         backgroundColor: tertiaryColor.withOpacity(0.5),
-          //         valueColor: AlwaysStoppedAnimation<Color>(
-          //             secondaryColor.withOpacity(0.5)),
-          //       ),
+          //     child: Column(
+          //       mainAxisAlignment: MainAxisAlignment.center,
+          //       children: [
+          //         Container(
+          //           width: screenWidth * 0.80,
+          //           height: screenHeight * 0.017,
+          //           decoration: BoxDecoration(
+          //             color: tertiaryColor,
+          //             borderRadius: BorderRadius.circular(screenWidth * 0.07),
+          //           ),
+          //           child: ClipRRect(
+          //             borderRadius: BorderRadius.circular(screenWidth * 0.07),
+          //             child: LinearProgressIndicator(
+          //               value: inferenceCorrectCtr / numberOfExecution,
+          //               backgroundColor: tertiaryColor.withOpacity(0.5),
+          //               valueColor: AlwaysStoppedAnimation<Color>(
+          //                   secondaryColor.withOpacity(0.5)),
+          //             ),
+          //           ),
+          //         ),
+          //         SizedBox(
+          //           height: screenHeight * 0.005,
+          //         ),
+          //         buildContainerList(setsNeeded, setsAchieved, context,
+          //             spaceModifier: .8),
+          //       ],
           //     ),
           //   ),
           // ),
 
-// -----------------------------------------------------------------------------------------------------------[Sets Progress Bar]
-          // Align(
-          //   alignment: Alignment(0.0, -0.87),
-          //   child: buildContainerList(widget.setsNeeded, setsAchieved, context,
-          //       spaceModifier: 0.8),
-          // ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // SizedBox(
-                //   width: screenWidth * 0.0325,
-                // ),
-
-                // ElevatedButton(
-                //   child: Text(
-                //     'Tutorial',
-                //     style: TextStyle(
-                //       fontWeight: FontWeight.w300,
-                //       color: mainColor,
-                //       fontSize: 16.0,
-                //     ),
-                //   ),
-                //   style: ButtonStyle(
-                //     backgroundColor:
-                //         MaterialStateProperty.all<Color>(tertiaryColor),
-                //     minimumSize: MaterialStateProperty.all(
-                //         Size(screenWidth * 0.25, screenHeight * 0.04)),
-                //     shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                //       RoundedRectangleBorder(
-                //         borderRadius: BorderRadius.circular(screenWidth * 0.08),
-                //       ),
-                //     ),
-                //   ),
-                //   onPressed: () {
-                //     // Handle button press
-                //     print('ElevatedButton pressed');
-                //   },
-                // ),
-              ],
-            ),
-          ),
+          // ref.watch(showPreviewProvider) == true
+          //     ? Stack(
+          //         children: [
+          //           Container(
+          //             height: screenHeight,
+          //             width: screenWidth,
+          //             color: Colors.black87.withOpacity(0.85),
+          //           ),
+          //           VideoPreviewScreen(
+          //             videoPath: video,
+          //             isInferencingPreview: true,
+          //           ),
+          //           Container(
+          //             child: Text("try this out!"),
+          //           )
+          //         ],
+          //       )
+          //     : noDisplay(),
         ],
       ),
     );

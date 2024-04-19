@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:fitguide_main/Models/exercise.dart';
 import 'package:fitguide_main/Services/api/api.dart';
 
-class ExerciseDetailsView extends StatelessWidget {
+class ExerciseDetailsPage extends StatelessWidget {
   final Exercise exercise;
 
-  const ExerciseDetailsView({super.key, required this.exercise});
+  const ExerciseDetailsPage({super.key, required this.exercise});
 
   @override
   Widget build(BuildContext context) {

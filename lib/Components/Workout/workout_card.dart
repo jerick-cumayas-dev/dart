@@ -137,7 +137,7 @@ class WorkoutCardWidget extends ConsumerWidget {
                           context,
                           MaterialPageRoute(
                             builder: (context) =>
-                                ExerciseDetailsView(exercise: exercise),
+                                ExerciseDetailsPage(exercise: exercise),
                           ),
                         );
                       },

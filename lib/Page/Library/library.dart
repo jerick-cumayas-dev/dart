@@ -75,7 +75,7 @@ class _LibraryViewState extends State<LibraryView>
               children: [
                 FullBodyWorkoutListView(workouts: workouts),
                 WorkoutListView(workouts: userWorkouts),
-                ExercisesView(exercises: exercises),
+                ExercisesPage(exercises: exercises),
               ],
             );
           },

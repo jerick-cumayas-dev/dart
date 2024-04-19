@@ -1,16 +1,18 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:fitguide_main/Core/extraWidgets/customWidgetPDV.dart';
-import 'package:fitguide_main/Core/modes/dataCollection/screens/collectionDataP1.dart';
+import 'package:fitguide_main/Core/custom_widgets/customWidgetPDV.dart';
+import 'package:fitguide_main/Core/modes/dataCollection/screens/p2_txtConversion.dart';
 import 'package:scroll_snap_list/scroll_snap_list.dart';
-import 'cwProcessingToTxt.dart';
+import '../../services/provider_collection.dart';
+import 'customButton.dart';
+import 'txtConversion.dart';
 
 import 'package:fitguide_main/Core/modes/globalStuff/provider/globalVariables.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../logicFunction/isolateProcessPDV.dart';
-import '../../globalStuff/widgets/halfCircleProgressBar.dart';
-import 'cwReview.dart';
+import '../logicFunction/isolateProcessPDV.dart';
+import '../modes/dataCollection/widgets/cwReview.dart';
+import 'halfCircleProgressBar.dart';
 
 class cwDataAnalysis extends ConsumerStatefulWidget {
   final double widthMultiplier;
@@ -18,11 +20,13 @@ class cwDataAnalysis extends ConsumerStatefulWidget {
   final int alphaValue;
   final int execCount;
   final List<List<List<double>>> data;
+  final List<List<List<double>>> data2;
 
   const cwDataAnalysis({
     super.key,
     required this.execCount,
     required this.data,
+    required this.data2,
     this.widthMultiplier = 0.7,
     this.heightMultiplier = 0.25,
     this.alphaValue = 235,
@@ -99,45 +103,45 @@ class _cwDataAnalysisState extends ConsumerState<cwDataAnalysis> {
                   children: [
                     Row(
                       children: [
-                        IconButton(
-                          alignment: Alignment.topLeft,
-                          padding: EdgeInsets.zero,
-                          icon: Icon(
-                            Icons.arrow_back,
-                            color: tertiaryColor,
-                            size: screenWidth * .08,
-                          ),
-                          highlightColor: Colors.transparent,
-                          onPressed: () {
-                            if (review == false) {
-                              cancelfunc();
-                              print("review is false");
-                              setState(() {});
-                            } else {
-                              print("review is true");
+                        // IconButton(
+                        //   alignment: Alignment.topLeft,
+                        //   padding: EdgeInsets.zero,
+                        //   icon: Icon(
+                        //     Icons.arrow_back,
+                        //     color: tertiaryColor,
+                        //     size: screenWidth * .08,
+                        //   ),
+                        //   highlightColor: Colors.transparent,
+                        //   onPressed: () {
+                        //     if (review == false) {
+                        //       cancelfunc();
+                        //       print("review is false");
+                        //       setState(() {});
+                        //     } else {
+                        //       print("review is true");
 
-                              setState(() {
-                                review = false;
-                              });
-                            }
-                          },
-                        ),
+                        //       setState(() {
+                        //         review = false;
+                        //       });
+                        //     }
+                        //   },
+                        // ),
                         Expanded(
                           child: SizedBox(
                             height: screenHeight * 0.005,
                           ),
                         ),
-                        IconButton(
-                          alignment: Alignment.topRight,
-                          padding: EdgeInsets.zero,
-                          icon: Icon(
-                            Icons.help,
-                            color: tertiaryColor,
-                            size: screenWidth * .08,
-                          ),
-                          highlightColor: Colors.transparent,
-                          onPressed: () {},
-                        ),
+                        // IconButton(
+                        //   alignment: Alignment.topRight,
+                        //   padding: EdgeInsets.zero,
+                        //   icon: Icon(
+                        //     Icons.help,
+                        //     color: tertiaryColor,
+                        //     size: screenWidth * .08,
+                        //   ),
+                        //   highlightColor: Colors.transparent,
+                        //   onPressed: () {},
+                        // ),
                       ],
                     ),
                     Column(
@@ -161,23 +165,31 @@ class _cwDataAnalysisState extends ConsumerState<cwDataAnalysis> {
                                             child: HalfCircleProgressBar(
                                               backgroundColor:
                                                   colorSet['tertiaryColor']!,
-                                              valueColor:
-                                                  colorSet['secondaryColor']!,
+
                                               strokeWidth: screenWidth * 0.06,
-                                              executionCount: widget.execCount,
+                                              executionCount: ref
+                                                  .watch(
+                                                      coordinatesDataProvider)
+                                                  .state
+                                                  .length,
 
                                               maxExecution: 100, // 50% progress
                                               // 50% progress
                                               sizeOfCircle: Size(
                                                   screenWidth * 0.5,
                                                   screenWidth * 0.5),
+                                              incorrectExecutionCount: ref
+                                                  .watch(
+                                                      incorrectCoordinatesDataProvider)
+                                                  .state
+                                                  .length,
                                             ),
                                           ),
                                           Center(
                                             child: Column(
                                               children: [
                                                 SizedBox(
-                                                  height: screenHeight * 0.015,
+                                                  height: screenHeight * 0.04,
                                                 ),
                                                 IconButton(
                                                   icon: Icon(
@@ -192,7 +204,7 @@ class _cwDataAnalysisState extends ConsumerState<cwDataAnalysis> {
                                                   style: TextStyle(
                                                     fontSize: screenWidth *
                                                         textSizeModifierSet[
-                                                            'smallText2']!,
+                                                            'mediumText']!,
                                                     fontWeight: FontWeight.bold,
                                                     color: colorSet[
                                                         'tertiaryColor'],
@@ -206,7 +218,7 @@ class _cwDataAnalysisState extends ConsumerState<cwDataAnalysis> {
                                           Column(
                                             children: [
                                               SizedBox(
-                                                height: screenHeight * 0.16,
+                                                height: screenHeight * 0.18,
                                               ),
                                               Row(
                                                 children: [
@@ -225,7 +237,7 @@ class _cwDataAnalysisState extends ConsumerState<cwDataAnalysis> {
                                                           averageColorState)),
                                                   Expanded(
                                                     child: SizedBox(
-                                                      height: 0.02,
+                                                      height: 0.18,
                                                     ),
                                                   ),
                                                   executionResults(
@@ -273,27 +285,27 @@ class _cwDataAnalysisState extends ConsumerState<cwDataAnalysis> {
                                                           maxFrameColorState)),
                                                 ],
                                               ),
-                                              Container(
-                                                width: screenWidth * 0.8,
-                                                height: screenWidth * 0.005,
-                                                decoration: BoxDecoration(
-                                                  color:
-                                                      colorSet['tertiaryColor'],
-                                                ),
-                                              ),
-                                              Text(
-                                                "Data quality : Good", // Text to display
-                                                style: TextStyle(
-                                                  fontSize: screenWidth *
-                                                      textSizeModifierSet[
-                                                          'mediumText']!,
-                                                  fontWeight: FontWeight.bold,
-                                                  color:
-                                                      colorSet['tertiaryColor'],
-                                                  decoration:
-                                                      TextDecoration.none,
-                                                ),
-                                              ),
+                                              // Container(
+                                              //   width: screenWidth * 0.8,
+                                              //   height: screenWidth * 0.005,
+                                              //   decoration: BoxDecoration(
+                                              //     color:
+                                              //         colorSet['tertiaryColor'],
+                                              //   ),
+                                              // ),
+                                              // Text(
+                                              //   "Data quality : Good", // Text to display
+                                              //   style: TextStyle(
+                                              //     fontSize: screenWidth *
+                                              //         textSizeModifierSet[
+                                              //             'mediumText']!,
+                                              //     fontWeight: FontWeight.bold,
+                                              //     color:
+                                              //         colorSet['tertiaryColor'],
+                                              //     decoration:
+                                              //         TextDecoration.none,
+                                              //   ),
+                                              // ),
                                             ],
                                           ),
                                         ],
@@ -308,19 +320,19 @@ class _cwDataAnalysisState extends ConsumerState<cwDataAnalysis> {
                                           mainAxisAlignment:
                                               MainAxisAlignment.spaceEvenly,
                                           children: [
-                                            buildElevatedButton(
-                                              context: context,
-                                              label: "Review",
-                                              colorSet: colorSet,
-                                              textSizeModifierIndividual:
-                                                  textSizeModifierSet[
-                                                      'smallText2']!,
-                                              func: () {
-                                                setState(() {
-                                                  review = true;
-                                                });
-                                              },
-                                            ),
+                                            // buildElevatedButton(
+                                            //   context: context,
+                                            //   label: "Review",
+                                            //   colorSet: colorSet,
+                                            //   textSizeModifierIndividual:
+                                            //       textSizeModifierSet[
+                                            //           'smallText2']!,
+                                            //   func: () {
+                                            //     setState(() {
+                                            //       review = true;
+                                            //     });
+                                            //   },
+                                            // ),
                                             buildElevatedButton(
                                               context: context,
                                               label: "Submit",
@@ -334,7 +346,11 @@ class _cwDataAnalysisState extends ConsumerState<cwDataAnalysis> {
                                                   MaterialPageRoute(
                                                     builder: (context) =>
                                                         collectionDataP1(
-                                                            input: widget.data),
+                                                      correctDataset:
+                                                          widget.data,
+                                                      incorretcDataset:
+                                                          widget.data2,
+                                                    ),
                                                   ),
                                                 );
                                               },

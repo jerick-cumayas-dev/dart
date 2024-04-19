@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'provider_collection.dart';
+
 String csrfToken = '';
 
 Future<String> getCSRFToken() async {
@@ -25,7 +27,9 @@ Future<void> collectDatasetInfo(WidgetRef ref) async {
   var uri = Uri.parse('http://192.168.1.18:8000/modelTraining/datasetSubmit/');
 
   String sessionKey = ref.watch(sessionKeyProvider);
-  String filePath = ref.watch(filePathProvider);
+  String filePath = ref.watch(correctDataSetPath);
+  String filePath2 = ref.watch(incorrectDataSetPath);
+
   print("FILE PATH 30423423 -> $filePath");
   final headers = {
     'Authorization': sessionKey,
@@ -34,7 +38,8 @@ Future<void> collectDatasetInfo(WidgetRef ref) async {
 
   request.headers.addAll(headers);
 
-  request.files.add(await http.MultipartFile.fromPath('file', filePath));
+  request.files.add(await http.MultipartFile.fromPath('positiveDataset', filePath));
+  request.files.add(await http.MultipartFile.fromPath('negativeDataset', filePath2));
 
 // DatasetInfo==============================================================
   double avgLuminanceValue = ref.watch(luminanceProvider);
@@ -43,7 +48,7 @@ Future<void> collectDatasetInfo(WidgetRef ref) async {
   int minSequenceValue = ref.watch(minFrameState);
   int maxSequenceValue = ref.watch(maxFrameState);
 
-  request.fields['avgLuminance'] = avgLuminanceValue.toString();
+  // request.fields['avgLuminance'] = avgLuminanceValue.toString();
   request.fields['numExecution'] = numExecutionValue.toString();
   request.fields['avgSequence'] = avgSequenceValue.toString();
   request.fields['minSequence'] = minSequenceValue.toString();
@@ -53,15 +58,15 @@ Future<void> collectDatasetInfo(WidgetRef ref) async {
 // ExerciseInfo==============================================================
   String exerciseNameVale = ref.watch(exerciseNameProvider);
   String descriptionValue = ref.watch(descriptionProvider);
-  String additionalNotesValue = ref.watch(additionalNotesProvider);
-  String partsAffectedValue = ref.watch(partsAffectedProvider);
+  // String additionalNotesValue = ref.watch(additionalNotesProvider);
+  // String partsAffectedValue = ref.watch(partsAffectedProvider);
   int exerciseNumSetValue = ref.watch(exerciseNumSetProvider);
   int exerciseNumExecutionValue = ref.watch(exerciseNumExecutionProvider);
 
   request.fields['exerciseName'] = exerciseNameVale;
   request.fields['description'] = descriptionValue;
-  request.fields['additionalNotes'] = additionalNotesValue;
-  request.fields['partsAffected'] = partsAffectedValue;
+  // request.fields['additionalNotes'] = additionalNotesValue;
+  // request.fields['partsAffected'] = partsAffectedValue;
   request.fields['exerciseNumSet'] = exerciseNumSetValue.toString();
   request.fields['exerciseNumExecution'] = exerciseNumExecutionValue.toString();
 // ExerciseInfo==============================================================
@@ -112,16 +117,17 @@ void getSessionVariable(String sessionKey) async {
 }
 
 Future<String> getSessionKey() async {
-  final response = await http.get(Uri.parse(
-      'http://192.168.1.18:8000/modelTraining/generate_session_key/'));
+  // final response = await http.get(Uri.parse(
+  //     'http://192.168.1.18:8000/modelTraining/generate_session_key/'));
 
-  if (response.statusCode == 200) {
-    final sessionKey = response.body;
+  // if (response.statusCode == 200) {
+  //   final sessionKey = response.body;
 
-    return sessionKey;
-  } else {
-    throw Exception('Failed to retrieve session key');
-  }
+  //   return sessionKey;
+  // } else {
+  //   throw Exception('Failed to retrieve session key');
+  // }
+  return "0";
 }
 
 void fetchSessionKey() async {
